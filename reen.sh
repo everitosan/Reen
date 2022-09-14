@@ -1,29 +1,57 @@
 #/bin/bash
+
+## Global variables
 DEST=""
 SOURCE_FILE=""
 IGNORE_FILE=""
 
+## Global colors
+BLUE="\e[34m"
+GREEN="\e[32m"
+RED="\e[31m"
+YELLOW="\e[33m"
+RESET="\e[0m"
+
 function header {
-  echo -e "###################
-# 🔧 Reen script  #
-###################
+  echo -e "${BLUE}#####################
+# 🔧 ${RESET}🆁🅴🅴🅽${BLUE} (script)  #
+#####################${RESET}
 "
 }
 
 function help {
   header;
   echo -e "-h - Show help
--d - Direcotry path for destiny of the backup
+-d - Directory path for destiny of the backup
 -s - File with directories to backup
 -i - File with directories to be ignored in the backup
 "
+}
+
+function log_level {
+  # First parameter represnets the level for the log
+  # Second parameter represents the message to log
+  if [ $1 == "0" ]; # Info level 
+  then
+    echo -e "${GREEN} ✅ ${2}${RESET}"
+  fi
+
+  if [ $1 == "1" ]; # Warning level
+  then
+    echo -e "${YELLOW} ⚠️  ${2}${RESET}"
+  fi
+
+  if [ $1 == "2" ]; # Error level
+  then
+    echo -e "${RED} ❌ ${2}${RESET}"
+  fi
 }
 
 function validate_dir {
   # Validates dir exists or creates it
   if [ -z $1 ];
   then
-    echo -e "Missing required parameter for directory";
+    log_level "2" "Missing required parameter for directory";
     help;
     exit;  
   fi
@@ -33,7 +61,7 @@ function validate_file {
   # Validates if global var is not empty
   if [ -z $1 ];
   then
-    echo -e "Missing required parameter for file";
+    log_level "2" "Missing required parameter for file";
     help;
     exit;
   fi
@@ -41,7 +69,7 @@ function validate_file {
   # Validates if file is empty
   if ! [[ -s $1 ]];
   then
-    echo -e "Not found or empty file ${1}";
+    log_level "2" "Not found or empty file ${1}";
     exit;
   fi
 }
@@ -69,17 +97,24 @@ function main {
   echo -e "[Destiny] => $DEST";
   echo -e " "; 
 
+  # Validates dest directory 
   if [ ! -d $DEST ];
   then
     mkdir -p $DEST;
-    echo -e "... Destiny directory created";
+    log_level "0" "... Destiny directory created";
   fi
   
   for i in $(cat $SOURCE_FILE ); do
-    rsync -a --exclude-from={"${IGNORE_FILE}",} "${i}"  "${DEST}"
-    echo -e "... ${i} complete";
+    if [ ! -d $i ];
+    then
+      log_level "1" "Directory ${i} not found"
+    else
+      rsync -a --exclude-from={"${IGNORE_FILE}",} "${i}"  "${DEST}"
+      log_level "0" "Directory ${i} complete"
+    fi
   done
-  tree "${DEST}";
+
+  # tree "${DEST}";
 }
 
 while getopts ":hd:s:i:" option; do

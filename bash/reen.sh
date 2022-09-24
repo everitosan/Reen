@@ -105,12 +105,21 @@ function main {
   fi
   
   for i in $(cat $SOURCE_FILE ); do
-    if [ ! -d $i ];
+    if [ -n $i ]; # If is not an empty line
     then
-      log_level "1" "Directory ${i} not found"
-    else
-      rsync -a --exclude-from={"${IGNORE_FILE}",} "${i}"  "${DEST}"
-      log_level "0" "Directory ${i} complete"
+      if [ ! -d $i ]; # If it is not a directory
+      then
+        if [ -f "${i}" ]; # If its a file and exists
+        then
+          rsync "${i}" "${DEST}"
+          log_level "0" "File ${i} complete"
+        else
+          log_level "1" "Directory or file ${i} not found"
+        fi
+      else
+        rsync -a --exclude-from={"${IGNORE_FILE}",} "${i}"  "${DEST}"
+        log_level "0" "Directory ${i} complete"
+      fi
     fi
   done
 
